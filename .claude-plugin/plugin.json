@@ -1,0 +1,7 @@
+{
+  "name": "session-meter",
+  "version": "0.3.0",
+  "description": "A band above the prompt: model, session time, tokens, context, cost (session/today/week), and the 5-hour and weekly limits with burn rate",
+  "author": { "name": "hz1mx" },
+  "types": "./types/index.d.ts"
+}

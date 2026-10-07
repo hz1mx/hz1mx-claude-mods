@@ -1,0 +1,12 @@
+{
+  "name": "hz1mx-claude-mods",
+  "owner": { "name": "hz1mx" },
+  "description": "hz1mx's Claude Code mods",
+  "plugins": [
+    {
+      "name": "session-meter",
+      "source": "./",
+      "description": "A band above the prompt: model, session time, tokens, context, cost, and the 5-hour and weekly limits"
+    }
+  ]
+}
