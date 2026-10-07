@@ -35,28 +35,28 @@ export const formatDuration = (ms: number) => {
 }
 
 export const formatTokens = (n: number) => {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)} مليون`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)} ألف`
 
   return String(n)
 }
 
 export const formatUsd = (v: number) => `$${v < 10 ? v.toFixed(3) : v.toFixed(2)}`
 
-/** Time left, coarse: `2d 4h`, `3h 10m`, `12m`. */
+/** Time left, coarse: `2ي 4س`, `3س 10د`, `12د`. */
 export const formatLeft = (ms: number) => {
   const m = Math.max(0, Math.ceil(ms / 60_000))
   const d = Math.floor(m / 1440)
   const h = Math.floor((m % 1440) / 60)
 
-  if (d > 0) return `${d}d ${h}h`
-  if (h > 0) return `${h}h ${m % 60}m`
+  if (d > 0) return `${d}ي ${h}س`
+  if (h > 0) return `${h}س ${m % 60}د`
 
-  return `${m}m`
+  return `${m}د`
 }
 
 export const limitLabel = (kind: string) =>
-  kind === 'five_hour' ? '5h' : kind === 'seven_day' ? '7d' : kind === 'spend_limit' ? 'spend' : kind.replace(/_/g, ' ')
+  kind === 'five_hour' ? 'حد 5 ساعات' : kind === 'seven_day' ? 'حد الأسبوع' : kind === 'spend_limit' ? 'حد الصرف' : kind.replace(/_/g, ' ')
 
 /** `claude-opus-5-5` → `opus-5-5`; a `[1m]` suffix stays. */
 export const shortModel = (id: string) => id.replace(/^claude-/, '').replace(/-\d{8}$/, '')
@@ -116,7 +116,7 @@ async function setLimits($: EngineInterface, next: Limit[]) {
     const prior = l.percentUsed < (seen[l.kind] ?? 0) ? 0 : (seen[l.kind] ?? 0)
     const crossed = WARN_AT.filter(p => l.percentUsed >= p).pop() ?? 0
     if (crossed > prior) {
-      $.ui.toast(`Limit ${limitLabel(l.kind)}: ${l.percentUsed}% used`)
+      $.ui.toast(`${limitLabel(l.kind)}: استهلكت ${l.percentUsed}٪`)
     }
     after[l.kind] = Math.max(prior, crossed)
   }
@@ -152,10 +152,10 @@ async function checkContext($: EngineInterface, percent: number) {
   await update($, contextWarned, () => true)
 
   if (await read($, autoCompact)) {
-    $.ui.toast(`Context ${Math.round(percent)}%: compacting`)
-    $.session.compact().catch(() => $.ui.toast('Auto-compact failed; run /compact'))
+    $.ui.toast(`السياق ${Math.round(percent)}٪: جاري الضغط`)
+    $.session.compact().catch(() => $.ui.toast('ما زبط الضغط التلقائي، شغّل /compact'))
   } else {
-    $.ui.toast(`Context ${Math.round(percent)}%: consider /compact`)
+    $.ui.toast(`السياق ${Math.round(percent)}٪: يفضّل تسوي /compact`)
   }
 }
 
@@ -163,7 +163,7 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'meter',
-      description: 'Session meter: toggle the band, or `autocompact on|off`',
+      description: 'عدّاد الجلسة: إخفاء/إظهار الشريط، أو `autocompact on|off` للضغط التلقائي',
       argumentHint: '[autocompact on|off]',
     })
 
@@ -201,14 +201,14 @@ export const register: Register = on => {
       await update($, autoCompact, () => isOn)
       await $.store.set('autoCompact', isOn)
 
-      return { text: `Auto-compact at ${CONTEXT_WARN}% context: ${isOn ? 'on' : 'off'}` }
+      return { text: `الضغط التلقائي عند ${CONTEXT_WARN}٪ من السياق: ${isOn ? 'شغّال' : 'طافي'}` }
     }
 
     const isHidden = !(await read($, hidden))
     await update($, hidden, () => isHidden)
     await $.store.set('hidden', isHidden)
 
-    return { text: isHidden ? 'Session meter hidden (/meter to show)' : 'Session meter shown' }
+    return { text: isHidden ? 'تم إخفاء الشريط (اكتب /meter لإظهاره)' : 'تم إظهار الشريط' }
   })
 
   on('turn.complete', async ($, e, next) => {
@@ -265,20 +265,20 @@ export const register: Register = on => {
 
     type Part = { text: string; color?: 'warning' | 'error' }
     const top: Part[] = []
-    if (m) top.push({ text: shortModel(m) })
-    top.push({ text: `⏱ ${formatDuration(at - since)}` })
-    top.push({ text: `tokens ${formatTokens(total)} (in ${formatTokens(t.input + t.cacheRead + t.cacheWrite)} / out ${formatTokens(t.output)})` })
-    if (ctx !== null) top.push({ text: `context ${Math.round(ctx)}%`, color: severity(ctx) })
-    if (cost !== null) top.push({ text: `${formatUsd(cost)} · today ${formatUsd(today)} · 7d ${formatUsd(week)}` })
+    if (m) top.push({ text: `الموديل ${shortModel(m)}` })
+    top.push({ text: `⏱ المدة ${formatDuration(at - since)}` })
+    top.push({ text: `التوكنز ${formatTokens(total)} (داخل ${formatTokens(t.input + t.cacheRead + t.cacheWrite)} / خارج ${formatTokens(t.output)})` })
+    if (ctx !== null) top.push({ text: `السياق ${Math.round(ctx)}٪`, color: severity(ctx) })
+    if (cost !== null) top.push({ text: `التكلفة: الجلسة ${formatUsd(cost)} · اليوم ${formatUsd(today)} · الأسبوع ${formatUsd(week)}` })
 
     const bottom: Part[] = windows.map(l => {
       const reset = l.resetsAt ? Date.parse(l.resetsAt) : NaN
-      const resetText = Number.isNaN(reset) ? '' : ` ↻${formatLeft(reset - at)}`
+      const resetText = Number.isNaN(reset) ? '' : ` ↻ يتجدد بعد ${formatLeft(reset - at)}`
       const out = runsOutIn(started[l.kind], l, at)
-      const outText = out === null ? '' : ` ⚠ out in ~${formatLeft(out)}`
+      const outText = out === null ? '' : ` ⚠ يخلص بعد ~${formatLeft(out)}`
 
       return {
-        text: `${limitLabel(l.kind)} ${Math.round(l.percentUsed)}%${resetText}${outText}`,
+        text: `${limitLabel(l.kind)} ${Math.round(l.percentUsed)}٪${resetText}${outText}`,
         color: out !== null ? 'error' : severity(l.percentUsed),
       }
     })

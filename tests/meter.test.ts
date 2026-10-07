@@ -22,15 +22,15 @@ test('formats duration, tokens, cost, time left and names', () => {
   expect(formatDuration(65_000)).toBe('1:05')
   expect(formatDuration(3_725_000)).toBe('1:02:05')
   expect(formatTokens(950)).toBe('950')
-  expect(formatTokens(12_345)).toBe('12.3k')
-  expect(formatTokens(2_500_000)).toBe('2.5M')
+  expect(formatTokens(12_345)).toBe('12.3 ألف')
+  expect(formatTokens(2_500_000)).toBe('2.5 مليون')
   expect(formatUsd(0.1234)).toBe('$0.123')
   expect(formatUsd(12.5)).toBe('$12.50')
-  expect(formatLeft(90 * 60_000)).toBe('1h 30m')
-  expect(formatLeft(2 * DAY + 4 * HOUR)).toBe('2d 4h')
-  expect(formatLeft(5 * 60_000)).toBe('5m')
-  expect(limitLabel('five_hour')).toBe('5h')
-  expect(limitLabel('seven_day')).toBe('7d')
+  expect(formatLeft(90 * 60_000)).toBe('1س 30د')
+  expect(formatLeft(2 * DAY + 4 * HOUR)).toBe('2ي 4س')
+  expect(formatLeft(5 * 60_000)).toBe('5د')
+  expect(limitLabel('five_hour')).toBe('حد 5 ساعات')
+  expect(limitLabel('seven_day')).toBe('حد الأسبوع')
   expect(shortModel('claude-opus-5-5')).toBe('opus-5-5')
   expect(shortModel('claude-haiku-4-5-20251001')).toBe('haiku-4-5')
 })
@@ -99,16 +99,16 @@ for (const surface of ['terminal', 'desktop'] as const) {
 
     const ui = await $.ui.mount({ plugin: 'session-meter', surface, component: 'AbovePrompt', props: { hasSurvey: false, isWorking: false } as never })
     const drawn = JSON.stringify(await ui.drawn())
-    expect(drawn).toContain('opus-5-5')
-    expect(drawn).toContain('1:01:05')
-    expect(drawn).toContain('1.5k')
-    expect(drawn).toContain('out 500')
-    expect(drawn).toContain('context 40%')
+    expect(drawn).toContain('الموديل opus-5-5')
+    expect(drawn).toContain('⏱ المدة 1:01:05')
+    expect(drawn).toContain('التوكنز 1.5 ألف')
+    expect(drawn).toContain('خارج 500')
+    expect(drawn).toContain('السياق 40٪')
     // The session spent 0.25 since it started: booked to today, yesterday's 3 in the week.
-    expect(drawn).toContain('$0.750 · today $0.250 · 7d $3.250')
-    expect(drawn).toContain('7d 91%')
+    expect(drawn).toContain('التكلفة: الجلسة $0.750 · اليوم $0.250 · الأسبوع $3.250')
+    expect(drawn).toContain('حد الأسبوع 91٪')
     // 20% → 60% in an hour: out in an hour, before the 3h reset.
-    expect(drawn).toContain('5h 60% ↻3h 0m ⚠ out in ~1h 0m')
+    expect(drawn).toContain('حد 5 ساعات 60٪ ↻ يتجدد بعد 3س 0د ⚠ يخلص بعد ~1س 0د')
     expect(drawn).toContain('"color":"error"')
   })
 }
@@ -118,13 +118,13 @@ test('/meter hides and shows the band, and remembers it', async ($, on) => {
   await $.session.start({ cwd: '/' } as never)
   const props = { hasSurvey: false, isWorking: false } as never
 
-  expect((await $.command.run({ command: 'meter', args: '' } as never)).text).toContain('hidden')
+  expect((await $.command.run({ command: 'meter', args: '' } as never)).text).toContain('إخفاء')
   const off = JSON.stringify(await (await $.ui.mount({ plugin: 'session-meter', surface: 'terminal', component: 'AbovePrompt', props })).drawn())
-  expect(off).not.toContain('tokens')
+  expect(off).not.toContain('التوكنز')
 
-  expect((await $.command.run({ command: 'meter', args: '' } as never)).text).toContain('shown')
+  expect((await $.command.run({ command: 'meter', args: '' } as never)).text).toContain('إظهار')
   const onAgain = JSON.stringify(await (await $.ui.mount({ plugin: 'session-meter', surface: 'terminal', component: 'AbovePrompt', props })).drawn())
-  expect(onAgain).toContain('tokens')
+  expect(onAgain).toContain('التوكنز')
 })
 
 test('compacts at 85% context only with autocompact on, once per climb', async ($, on) => {
@@ -133,9 +133,9 @@ test('compacts at 85% context only with autocompact on, once per climb', async (
 
   await $.session.measure(measure(0.5, 86, 20))
   expect(compacts.length).toBe(0)
-  expect(toasts.join()).toContain('consider /compact')
+  expect(toasts.join()).toContain('يفضّل تسوي /compact')
 
-  expect((await $.command.run({ command: 'meter', args: 'autocompact on' } as never)).text).toContain('on')
+  expect((await $.command.run({ command: 'meter', args: 'autocompact on' } as never)).text).toContain('شغّال')
   await $.session.measure(measure(0.5, 50, 20))
   await $.session.measure(measure(0.5, 87, 20))
   await $.session.measure(measure(0.5, 88, 20))
